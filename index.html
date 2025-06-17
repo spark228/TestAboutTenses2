@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Тест "Tenses"</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div id="quiz">
+  <div id="question"></div>
+  <div id="chooseMsg" class="choose-msg"></div>
+  <div id="options"></div>
+  <div id="progressText"></div>
+  <div class="nav-buttons">
+    <button id="prevBtn">Назад</button>
+    <button id="nextBtn">Вперёд</button>
+  </div>
+</div>
+
+<div id="result" style="display:none;">
+  <div id="scoreText"></div>
+  <button id="showResultsBtn">Показать результаты</button>
+  <button id="restartBtn">Начать сначала</button>
+</div>
+
+<audio id="correctSound" src="correct.mp3" preload="auto"></audio>
+<audio id="wrongSound" src="wrong.mp3" preload="auto"></audio>
+
+<script src="script.js"></script>
+</body>
+</html>
