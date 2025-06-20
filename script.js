@@ -139,11 +139,22 @@ let questions = [
 
 ]; // Загрузка внешнего массива вопросов здесь
 
+// Сохраняем оригинальные вопросы для таблицы результатов
+let originalQuestions = JSON.parse(JSON.stringify(questions));
+
+// Перемешиваем вопросы один раз и добавляем originalIndex для отслеживания
+questions = questions
+  .map((q, i) => ({ ...q, originalIndex: i }))
+  .sort(() => Math.random() - 0.5);
+
 let current = 0;
 let selectedAnswers = new Array(questions.length).fill(null).map(() => []);
 let answeredQuestions = new Set();
 let correctCount = 0;
 let isAutoAdvancing = false;
+let shuffledOptions = [];
+let originalToShuffledMap = [];
+let shuffledData = new Array(questions.length).fill(null);
 
 const quizEl = document.getElementById("quiz");
 const questionEl = document.getElementById("question");
@@ -163,34 +174,46 @@ function showQuestion(index) {
   progressText.textContent = `Вопрос ${index + 1} / ${questions.length}`;
   chooseMsg.textContent = q.correct.length > 1 ? `Выберите ${q.correct.length} ответов` : "";
 
+  // Перемешиваем варианты ответов только один раз
+  if (!shuffledData[index]) {
+    shuffledData[index] = q.options.map((opt, i) => ({ text: opt, originalIndex: i }))
+      .sort(() => Math.random() - 0.5);
+  }
+
+  shuffledOptions = shuffledData[index];
+  originalToShuffledMap = shuffledOptions.map(o => o.originalIndex);
+
   optionsEl.innerHTML = "";
-  q.options.forEach((opt, i) => {
+  shuffledOptions.forEach((optObj, i) => {
+    const opt = optObj.text;
+    const originalIndex = optObj.originalIndex;
+
     const btn = document.createElement("div");
     btn.className = "option";
     btn.textContent = opt;
-    btn.dataset.index = i;
+    btn.dataset.index = originalIndex;
+
+    const answerSet = selectedAnswers[index];
 
     if (answeredQuestions.has(index)) {
-      if (q.correct.includes(i)) {
+      if (q.correct.includes(originalIndex)) {
         btn.classList.add("correct");
-      } else if (selectedAnswers[index].includes(i)) {
+      } else if (answerSet.includes(originalIndex)) {
         btn.classList.add("wrong");
       }
       btn.style.pointerEvents = "none";
-    } else if (selectedAnswers[index].includes(i)) {
+    } else if (answerSet.includes(originalIndex)) {
       btn.classList.add("selected");
     }
 
-    btn.addEventListener("click", () => toggleAnswer(i));
+    btn.addEventListener("click", () => toggleAnswer(originalIndex));
     optionsEl.appendChild(btn);
   });
 
-  // Растягиваем последнюю кнопку, если нечётное кол-во
   if (q.options.length % 2 !== 0) {
     optionsEl.lastElementChild.classList.add("wide-option");
   }
 
-  // Управление видимостью и расположением кнопок "Назад" и "Вперёд"
   if (index === 0) {
     prevBtn.style.visibility = "hidden";
     nextBtn.style.order = "1";
@@ -199,7 +222,6 @@ function showQuestion(index) {
     nextBtn.style.order = "0";
   }
 
-  // Обновляем кнопки, блокируем если автопереход
   prevBtn.disabled = isAutoAdvancing;
   nextBtn.disabled = isAutoAdvancing;
 
@@ -215,9 +237,9 @@ function toggleAnswer(i) {
 
   if (answeredQuestions.has(current)) return;
 
-  const indexInSel = sel.indexOf(i);
-  if (indexInSel > -1) {
-    sel.splice(indexInSel, 1);
+  const index = sel.indexOf(i);
+  if (index > -1) {
+    sel.splice(index, 1);
   } else {
     if (sel.length < maxSelect) sel.push(i);
   }
@@ -225,7 +247,6 @@ function toggleAnswer(i) {
   showQuestion(current);
 
   if (sel.length === maxSelect) {
-    // Подсветка и проверка
     const correctSet = new Set(q.correct);
     const isCorrect = sel.length === q.correct.length && sel.every(a => correctSet.has(a));
 
@@ -256,7 +277,7 @@ function toggleAnswer(i) {
         resultEl.style.display = "block";
         scoreText.textContent = `Ваш результат: ${correctCount} / ${questions.length}`;
       }
-    }, 3000);
+    }, 4000);
   }
 }
 
@@ -280,6 +301,13 @@ function restartQuiz() {
   answeredQuestions.clear();
   correctCount = 0;
   isAutoAdvancing = false;
+  shuffledData = new Array(questions.length).fill(null);
+
+  // Перемешиваем вопросы заново
+  questions = originalQuestions
+    .map((q, i) => ({ ...q, originalIndex: i }))
+    .sort(() => Math.random() - 0.5);
+
   quizEl.style.display = "block";
   resultEl.style.display = "none";
   showQuestion(0);
@@ -301,7 +329,7 @@ function showFinalTable() {
   });
   table.appendChild(header);
 
-  questions.forEach((q, i) => {
+  originalQuestions.forEach((q, i) => {
     const row = document.createElement("tr");
 
     const num = document.createElement("td");
@@ -311,7 +339,8 @@ function showFinalTable() {
     ques.textContent = q.question;
 
     const userAns = document.createElement("td");
-    userAns.textContent = selectedAnswers[i].map(idx => q.options[idx]).join(", ");
+    const answerIndex = questions.findIndex(q2 => q2.originalIndex === i);
+    userAns.textContent = selectedAnswers[answerIndex]?.map(idx => q.options[idx]).join(", ") || "";
 
     const correctAns = document.createElement("td");
     correctAns.textContent = q.correct.map(idx => q.options[idx]).join(", ");
@@ -333,6 +362,11 @@ function showFinalTable() {
 
 window.addEventListener("DOMContentLoaded", () => {
   showQuestion(0);
+  nextBtn.addEventListener("click", nextQuestion);
+  prevBtn.addEventListener("click", prevQuestion);
+  restartBtn.addEventListener("click", restartQuiz);
+  showResultsBtn.addEventListener("click", showFinalTable);
+});
   nextBtn.addEventListener("click", nextQuestion);
   prevBtn.addEventListener("click", prevQuestion);
   restartBtn.addEventListener("click", restartQuiz);
