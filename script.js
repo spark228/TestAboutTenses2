@@ -367,8 +367,3 @@ window.addEventListener("DOMContentLoaded", () => {
   restartBtn.addEventListener("click", restartQuiz);
   showResultsBtn.addEventListener("click", showFinalTable);
 });
-  nextBtn.addEventListener("click", nextQuestion);
-  prevBtn.addEventListener("click", prevQuestion);
-  restartBtn.addEventListener("click", restartQuiz);
-  showResultsBtn.addEventListener("click", showFinalTable);
-});
